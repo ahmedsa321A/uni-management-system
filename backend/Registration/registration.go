@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"university-management/backend/models"
 	"university-management/backend/store"
+	"time"
 )
 
 func readTheRow(row []string) models.Student {
@@ -20,13 +21,13 @@ func readTheRow(row []string) models.Student {
 	}
 	NationalID, _ := strconv.Atoi(row[6])
 	Student := models.Student{
-		NationalID   : NationalID,
-		StudentID    : nil
-		UserID       : nil
-		DepartmentID : &depID
-		FirstName    : row[2]
-		LastName     : row[3]
-		DateOfBirth  : dob
+		NationalID:   NationalID,
+		StudentID:    nil,
+		UserID:       nil,
+		DepartmentID: &depID,
+		FirstName:    row[2],
+		LastName:     row[3],
+		DateOfBirth:  dob,
 	}
 	return Student
 }
@@ -41,7 +42,7 @@ func makeUser(student models.Student) models.User {
 }
 
 func RegisterStudent(path string ) error {
-	file, err := os.OpenFile(path)
+	file, err := os.OpenFile(path, os.O_RDONLY, 0)
 	if err != nil {
 		return err
 	}
@@ -58,7 +59,8 @@ func RegisterStudent(path string ) error {
 		}
 		student := readTheRow(row)
 		user := makeUser(student)
-		UserID=store.UserStore.Create(&user)
+		// fixx zabt elconnection
+		UserID :=store.UserStore.Create(&user)
 		student.UserID=UserID
 		store.StudentStore.Create(&student)
 

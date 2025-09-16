@@ -39,9 +39,11 @@ type Instructor struct {
 }
 
 // Student corresponds to the STUDENTS table.
+// fixx add national_id to be string
 type Student struct {
 	StudentID    int        `json:"student_id"`
 	UserID       int        `json:"user_id"`
+	Cgpa         float32   `json:"cgpa,omitempty"`
 	DepartmentID *int       `json:"department_id,omitempty"`
 	FirstName    string     `json:"first_name"`
 	LastName     string     `json:"last_name"`

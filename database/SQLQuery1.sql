@@ -56,6 +56,7 @@ CREATE TABLE STUDENTS (
     department_id INT,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
+    cgpa DECIMAL(1,2),
     date_of_birth DATE,
     FOREIGN KEY (user_id) REFERENCES USERS(user_id),
     FOREIGN KEY (department_id) REFERENCES DEPARTMENTS(department_id)

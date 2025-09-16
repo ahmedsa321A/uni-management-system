@@ -6,7 +6,8 @@ import (
 )
 
 func email_IsIn(email string) (bool, models.User) {
-	u,err:=store.GetByEmail(email)
+	// fixx zabt elconnection
+	u,_:=store.UserStore.GetByEmail(email)
 	if u==nil{
 		return false, *u
 	}
