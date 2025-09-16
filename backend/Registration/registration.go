@@ -6,7 +6,40 @@ import (
 	"os"
 	"strconv"
 	"university-management/backend/models"
+	"university-management/backend/store"
 )
+
+func readTheRow(row []string) models.Student {
+	depID, _ := strconv.Atoi(row[0]) // department_id can be changed later to getDepartmentByName(row[0])
+	var dob *time.Time
+	if row[1] != "" {
+		t, err := time.Parse("2006-01-02", row[5]) // YYYY-MM-DD format
+		if err == nil {
+			dob = &t
+		}
+	}
+	NationalID, _ := strconv.Atoi(row[6])
+	Student := models.Student{
+		NationalID   : NationalID,
+		StudentID    : nil
+		UserID       : nil
+		DepartmentID : &depID
+		FirstName    : row[2]
+		LastName     : row[3]
+		DateOfBirth  : dob
+	}
+	return Student
+}
+
+func makeUser(student models.Student) models.User {
+	return models.User{
+		UserID:       nil,
+		Email:        fmt.Sprintf("%d", student.NationalID) + "@university.com",
+		PasswordHash: "defaultpassword",
+		RoleID:       0, //get the role id for student(getRoleByName("student"))
+	}
+}
+
 func RegisterStudent(path string ) error {
 	file, err := os.OpenFile(path)
 	if err != nil {
@@ -23,18 +56,12 @@ func RegisterStudent(path string ) error {
 		if i == 0 {
 			continue
 		}
+		student := readTheRow(row)
+		user := makeUser(student)
+		UserID=store.UserStore.Create(&user)
+		student.UserID=UserID
+		store.StudentStore.Create(&student)
 
-		age, err := strconv.Atoi(row[1])
-		if err != nil {
-			fmt.Println("Error converting age:", err)
-			continue
-		}
-
-		studen := models.Student{
-			Name:  row[0],
-			Age:   age,
-			Email: row[2],
-		}
 	}
 
 }

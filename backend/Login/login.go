@@ -2,15 +2,15 @@ package Login
 
 import (
 	"university-management/backend/models"
+	"university-management/backend/store"
 )
 
-func email_IsIn(email string, users_db []models.User) (bool, models.User) {
-	for _, u := range users_db {
-		if u.Email == email {
-			return true, u
-		}
+func email_IsIn(email string) (bool, models.User) {
+	u,err:=store.GetByEmail(email)
+	if u==nil{
+		return false, *u
 	}
-	return false, models.User{}
+	return true, *u
 }
 
 func password_IsCorrect(password string, user models.User) (bool, models.User) {
