@@ -21,6 +21,7 @@ type GradeDetail struct {
 type TimeTableEntry struct {
 	CourseCode     string
 	CourseTitle    string
+	SessionType    string // Added session type
 	DayOfWeek      string
 	StartTime      time.Time
 	EndTime        time.Time
@@ -95,12 +96,12 @@ func (s *StudentStore) Update(student *models.Student) error {
 }
 func (s *StudentStore) GetStudentbyname(firstName, lastName string) ([]*models.Student, error) {
 	query := `
-		SELECT 
-			student_id, user_id, department_id, first_name, last_name, date_of_birth 
-		FROM 
-			STUDENTS 
-		WHERE 
-			first_name = ? AND last_name = ?;`
+        SELECT 
+            student_id, user_id, department_id, first_name, last_name, date_of_birth 
+        FROM 
+            STUDENTS 
+        WHERE 
+            first_name = ? AND last_name = ?;`
 	rows, err := s.DB.Query(query, firstName, lastName)
 	if err != nil {
 		return nil, err
@@ -148,10 +149,10 @@ func (s *StudentStore) Delete(studentID int) error {
 
 func (s *StudentStore) GetAll() ([]*models.Student, error) {
 	query := `
-		SELECT 
-			student_id, user_id, department_id, first_name, last_name, date_of_birth 
-		FROM
-		STUDENTS;`
+        SELECT 
+            student_id, user_id, department_id, first_name, last_name, date_of_birth 
+        FROM
+        STUDENTS;`
 	rows, err := s.DB.Query(query)
 	if err != nil {
 		return nil, err
@@ -226,40 +227,33 @@ func (s *StudentStore) GetGrades(studentID int) ([]*GradeDetail, error) {
 
 func (s *StudentStore) GetTimeTable(studentID int, semester string, year int) ([]*TimeTableEntry, error) {
 	query := `
-        SELECT 
-            c.course_code, 
-            c.title, 
-            cs.day_of_week, 
-            cs.start_time, 
-            cs.end_time, 
-            cs.location, 
-            i.first_name || ' ' || i.last_name as instructor_name
-        FROM 
-            CLASS_SESSIONS cs
-        JOIN 
-            COURSE_OFFERINGS co ON cs.offering_id = co.offering_id
-        JOIN 
-            COURSES c ON co.course_id = c.course_id
-        JOIN
-            INSTRUCTORS i ON co.instructor_id = i.instructor_id
-        WHERE 
-            co.offering_id IN (
-                SELECT offering_id FROM ENROLLMENTS WHERE student_id = ?
-            ) 
-            AND co.semester = ? AND co.year = ?
-        ORDER BY
-            cs.start_time;`
+		SELECT 
+			c.course_code, c.title, cs.session_type, cs.day_of_week, cs.start_time, cs.end_time, cs.location, 
+			i.first_name || ' ' || i.last_name as instructor_name
+		FROM 
+			STUDENT_SESSION_CHOICES ssc
+		JOIN CLASS_SESSIONS cs ON ssc.session_id = cs.session_id
+		JOIN COURSE_OFFERINGS co ON ssc.offering_id = co.offering_id
+		JOIN COURSES c ON co.course_id = c.course_id
+		JOIN INSTRUCTORS i ON co.instructor_id = i.instructor_id
+		WHERE 
+			ssc.student_id = ?
+			AND co.semester = ? AND co.year = ?
+		ORDER BY
+			start_time;`
 	rows, err := s.DB.Query(query, studentID, semester, year)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
 	var timetable []*TimeTableEntry
 	for rows.Next() {
 		var entry TimeTableEntry
 		err := rows.Scan(
 			&entry.CourseCode,
 			&entry.CourseTitle,
+			&entry.SessionType,
 			&entry.DayOfWeek,
 			&entry.StartTime,
 			&entry.EndTime,
@@ -271,6 +265,7 @@ func (s *StudentStore) GetTimeTable(studentID int, semester string, year int) ([
 		}
 		timetable = append(timetable, &entry)
 	}
+
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
