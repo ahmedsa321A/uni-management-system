@@ -1,0 +1,15 @@
+ALTER TABLE CLASS_SESSIONS
+ADD COLUMN session_type TEXT NOT NULL DEFAULT 'Lecture';
+
+CREATE TABLE STUDENT_SESSION_CHOICES (
+    student_id INTEGER NOT NULL,
+    offering_id INTEGER NOT NULL,
+    session_id INTEGER NOT NULL,
+
+
+    PRIMARY KEY (student_id, offering_id, session_id),
+
+    FOREIGN KEY (student_id) REFERENCES STUDENTS(student_id) ON DELETE CASCADE,
+    FOREIGN KEY (offering_id) REFERENCES COURSE_OFFERINGS(offering_id) ON DELETE CASCADE,
+    FOREIGN KEY (session_id) REFERENCES CLASS_SESSIONS(session_id) ON DELETE NO ACTION
+);
