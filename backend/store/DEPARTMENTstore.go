@@ -13,6 +13,37 @@ type DeprtmentStore struct {
 }
 
 // function to create department recod return department id anr error message
+func (d *DeprtmentStore) GetAll() ([]*models.Department, error) {
+
+	query := `
+          SELECT department_id, department_name, faculty_id 
+          FROM DEPARTMENTS 
+         `
+
+	rows, err := d.db.Query(query)
+
+	if err != nil {
+		return nil, errors.New("Error getting departments")
+	}
+	defer rows.Close()
+	var departments []*models.Department
+	for rows.Next() {
+		var department models.Department
+		err := rows.Scan(
+			&department.DepartmentID,
+			&department.DepartmentName,
+			&department.FacultyID,
+		)
+		if err != nil {
+			return nil, errors.New("Error scanning department")
+		}
+		departments = append(departments, &department)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return departments, nil
+}
 func (d *DeprtmentStore) CreateDepartment(department *models.Department) (int64, error) {
 	// assume 0 cannot be a dept_id as it starts from 1
 	if department == nil || department.DepartmentName == "" {
