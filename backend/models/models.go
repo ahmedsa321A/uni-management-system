@@ -1,3 +1,4 @@
+// Package models contains the Go structs that represent the database tables.
 package models
 
 import "time"
@@ -18,31 +19,34 @@ type User struct {
 
 // Faculty corresponds to the FACULTIES table.
 type Faculty struct {
-	FacultyID int    `json:"faculty_id"`
+	FacultyID int64  `json:"faculty_id"`
 	Name      string `json:"name"`
 }
 
 // Department corresponds to the DEPARTMENTS table.
 type Department struct {
-	DepartmentID   int    `json:"department_id"`
+	DepartmentID   int64  `json:"department_id"`
 	DepartmentName string `json:"department_name"`
-	FacultyID      int    `json:"faculty_id"`
+	FacultyID      int64  `json:"faculty_id"`
 }
 
 // Instructor corresponds to the INSTRUCTORS table.
 type Instructor struct {
-	InstructorID int    `json:"instructor_id"`
-	UserID       int    `json:"user_id"`
+	InstructorID int64  `json:"instructor_id"`
+	UserID       int64  `json:"user_id"`
 	FirstName    string `json:"first_name"`
 	LastName     string `json:"last_name"`
-	DepartmentID *int   `json:"department_id,omitempty"` // Use a pointer for nullable foreign keys.
+	DepartmentID *int64 `json:"department_id,omitempty"` // Use a pointer for nullable foreign keys.
 }
 
 // Student corresponds to the STUDENTS table.
+// It has been updated to include NationalID.
 type Student struct {
-	StudentID    int        `json:"student_id"`
-	UserID       int        `json:"user_id"`
-	DepartmentID *int       `json:"department_id,omitempty"`
+	StudentID    int64      `json:"student_id"`
+	UserID       int64      `json:"user_id"`
+	NationalID   *string    `json:"national_id,omitempty"` // Added National ID
+	Cgpa         *float32   `json:"cgpa,omitempty"`        // Changed to pointer to handle potential NULL values
+	DepartmentID *int64     `json:"department_id,omitempty"`
 	FirstName    string     `json:"first_name"`
 	LastName     string     `json:"last_name"`
 	DateOfBirth  *time.Time `json:"date_of_birth,omitempty"` // Use a pointer for nullable dates.
@@ -50,12 +54,12 @@ type Student struct {
 
 // Course corresponds to the COURSES table.
 type Course struct {
-	CourseID     int     `json:"course_id"`
+	CourseID     int64   `json:"course_id"`
 	CourseCode   string  `json:"course_code"`
 	Title        string  `json:"title"`
 	Description  *string `json:"description,omitempty"` // Use a pointer for nullable text fields.
-	Credits      int     `json:"credits"`
-	DepartmentID int     `json:"department_id"`
+	Credits      int64   `json:"credits"`
+	DepartmentID int64   `json:"department_id"`
 }
 
 // CoursePrerequisite corresponds to the COURSE_PREREQUISITES table.
@@ -98,12 +102,21 @@ type Enrollment struct {
 	Grade      *string `json:"grade,omitempty"`
 }
 
+// StudentSessionChoice corresponds to the STUDENT_SESSION_CHOICES table.
+// This new struct links a student's enrollment to a specific, chosen class session.
+type StudentSessionChoice struct {
+	StudentID  int `json:"student_id"`
+	OfferingID int `json:"offering_id"`
+	SessionID  int `json:"session_id"`
+}
+
 // ClassSession corresponds to the CLASS_SESSIONS table.
 type ClassSession struct {
-	SessionID  int       `json:"session_id"`
-	OfferingID int       `json:"offering_id"`
-	DayOfWeek  string    `json:"day_of_week"`
-	StartTime  time.Time `json:"start_time"` // The Go driver will handle the SQL TIME type.
-	EndTime    time.Time `json:"end_time"`
-	Location   *string   `json:"location,omitempty"`
+	SessionID   int       `json:"session_id"`
+	OfferingID  int       `json:"offering_id"`
+	SessionType string    `json:"session_type"` // Added SessionType to distinguish lectures, labs, etc.
+	DayOfWeek   string    `json:"day_of_week"`
+	StartTime   time.Time `json:"start_time"` // The Go driver will handle the SQL TIME type.
+	EndTime     time.Time `json:"end_time"`
+	Location    *string   `json:"location,omitempty"`
 }
