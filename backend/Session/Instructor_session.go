@@ -1,43 +1,59 @@
 package Sesssion
 
 import (
+	"database/sql"
 	"fmt"
 	"university-management/backend/models"
 	"university-management/backend/store"
 )
 
-var instructor *models.Student
-var iuser *models.User
+type InstructorSession struct {
+	db         *sql.DB
+	User       *models.User
+	Instructor *models.Instructor
+}
 
-func iget(u *models.User) {
+func NewInstructorSession(db *sql.DB, user *models.User) (*InstructorSession, error) {
+	instructorStore := &store.INSTRUCTORstore{DB: db}
+	instructor, err := instructorStore.GetByID(int64(user.UserID))
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve instructor profile for user %d: %w", user.UserID, err)
+	}
+	return &InstructorSession{
+		db:         db,
+		User:       user,
+		Instructor: instructor,
+	}, nil
+}
+func (s *InstructorSession) iget(u *models.User) {
 	var ierr error
 	// fixx zabt elconnection
-	instructor, ierr = (&store.StudentStore{}).GetByID(u.UserID)
-	iuser = u
+	s.Instructor, ierr = (&store.INSTRUCTORstore{}).GetByID(int64(u.UserID))
+	s.User = u
 	if ierr != nil {
 		panic(ierr) // Handle error appropriately
 	}
 }
 
-func InstructorFirstName() string {
-	return instructor.FirstName
+func (s *InstructorSession) InstructorFirstName() string {
+	return s.Instructor.FirstName
 }
 
-func InstructorLastName() string {
-	return instructor.LastName
+func (s *InstructorSession) InstructorLastName() string {
+	return s.Instructor.LastName
 }
 
 // I want to return the department name instead of the ID
-func InstructorDepartmentName() string {
+func (s *InstructorSession) InstructorDepartmentName() string {
 	// fixx get the department name from the department ID
-	dept, err := (&store.DeprtmentStore{}).GetDepartmentById(*instructor.DepartmentID)
+	dept, err := (&store.DeprtmentStore{}).GetDepartmentById(*s.Instructor.DepartmentID)
 	if err != nil {
 		return "Unknown Department"
 	}
 	return dept.DepartmentName
 }
 
-func ChangeInstPassword(newPassword string) {
+func (s *InstructorSession) ChangeInstPassword(newPassword string) {
 	if newPassword == "" {
 		fmt.Print("Password cannot be empty")
 		return
@@ -46,5 +62,5 @@ func ChangeInstPassword(newPassword string) {
 		return
 	}
 	// WHAT IS THE HASH FUNCTION? =================================================================================================================================
-	iuser.PasswordHash = newPassword
+	s.User.PasswordHash = newPassword //hash the password
 }

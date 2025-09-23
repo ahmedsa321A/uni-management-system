@@ -5,29 +5,26 @@ import (
 	"university-management/backend/store"
 )
 
-func email_IsIn(email string) (bool, models.User) {
-	// fixx zabt elconnection
-	u,_:=store.UserStore.GetByEmail(email)
-	if u==nil{
-		return false, *u
+func EmailIsIn(userStore *store.UserStore, email string) (bool, *models.User) {
+	user, err := userStore.GetByEmail(email)
+	if err != nil {
+		return false, nil
 	}
-	return true, *u
+	return true, user
+}
+func PasswordIsCorrect(password string, user *models.User) bool {
+	//matnso4 el Hashing
+	return password == user.PasswordHash
 }
 
-func password_IsCorrect(password string, user models.User) (bool, models.User) {
-	// What is the hash function? =================================================================================================================================
-	if password == user.PasswordHash{
-		return true, user
-	}
-	return false, models.User{} // Placeholder
-}
+func Login(userStore *store.UserStore, email string, password string) (bool, *models.User) {
+	exists, user := EmailIsIn(userStore, email)
 
-func Login(email string, password string, users_db []models.User) (bool, models.User) {
-	status, user := email_IsIn(email, users_db)
-	// if the email is in the database, check the password
-	if status {
-		return password_IsCorrect(password, user)
+	if exists && user != nil {
+		if PasswordIsCorrect(password, user) {
+			return true, user
+		}
 	}
-	// if the email is not in the database, return false
-	return false, models.User{}
+
+	return false, nil
 }
