@@ -12,7 +12,7 @@ var suser *models.User
 func sget(u *models.User) {
 	var serr error
 	// fixx zabt elconnection
-	student, serr = (&store.StudentStore{}).GetByUserID(u.UserID)
+	student, serr = (&store.StudentStore{}).GetByID(u.UserID)
 	suser = u
 	if serr != nil {
 		panic(serr) // Handle error appropriately
@@ -28,17 +28,17 @@ func StudentLastName() string {
 }
 
 func CGPA() float32 {
-	return student.Cgpa
+	return *student.Cgpa
 }
 
 // I want to return the department name instead of the ID
 func StudentDepartmentName() string {
 	// fixx get the department name from the department ID
-	dept, err := store.DepartmentStore{}.GetByID(*student.DepartmentID)
+	dept, err := (&store.DeprtmentStore{}).GetDepartmentById(*student.DepartmentID)
 	if err != nil {
 		return "Unknown Department"
 	}
-	return dept.Name
+	return dept.DepartmentName
 }
 
 func StudentDateOfBirth() string {
@@ -49,11 +49,10 @@ func ChangeStuPassword(newPassword string) {
 	if newPassword == "" {
 		fmt.Print("Password cannot be empty")
 		return
-		} else if len(newPassword) < 8 {
-			fmt.Print("Password must be at least 8 characters long")
-			return
-		}
+	} else if len(newPassword) < 8 {
+		fmt.Print("Password must be at least 8 characters long")
+		return
+	}
 	// WHAT IS THE HASH FUNCTION? =================================================================================================================================
 	suser.PasswordHash = newPassword
 }
-

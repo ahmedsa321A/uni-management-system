@@ -1,3 +1,4 @@
+// Package models contains the Go structs that represent the database tables.
 package models
 
 import "time"
@@ -39,11 +40,12 @@ type Instructor struct {
 }
 
 // Student corresponds to the STUDENTS table.
-// fixx add national_id to be string
+// It has been updated to include NationalID.
 type Student struct {
 	StudentID    int64      `json:"student_id"`
 	UserID       int64      `json:"user_id"`
-	Cgpa         float32    `json:"cgpa,omitempty"`
+	NationalID   *string    `json:"national_id,omitempty"` // Added National ID
+	Cgpa         *float32   `json:"cgpa,omitempty"`        // Changed to pointer to handle potential NULL values
 	DepartmentID *int64     `json:"department_id,omitempty"`
 	FirstName    string     `json:"first_name"`
 	LastName     string     `json:"last_name"`
@@ -100,12 +102,21 @@ type Enrollment struct {
 	Grade      *string `json:"grade,omitempty"`
 }
 
+// StudentSessionChoice corresponds to the STUDENT_SESSION_CHOICES table.
+// This new struct links a student's enrollment to a specific, chosen class session.
+type StudentSessionChoice struct {
+	StudentID  int `json:"student_id"`
+	OfferingID int `json:"offering_id"`
+	SessionID  int `json:"session_id"`
+}
+
 // ClassSession corresponds to the CLASS_SESSIONS table.
 type ClassSession struct {
-	SessionID  int       `json:"session_id"`
-	OfferingID int       `json:"offering_id"`
-	DayOfWeek  string    `json:"day_of_week"`
-	StartTime  time.Time `json:"start_time"` // The Go driver will handle the SQL TIME type.
-	EndTime    time.Time `json:"end_time"`
-	Location   *string   `json:"location,omitempty"`
+	SessionID   int       `json:"session_id"`
+	OfferingID  int       `json:"offering_id"`
+	SessionType string    `json:"session_type"` // Added SessionType to distinguish lectures, labs, etc.
+	DayOfWeek   string    `json:"day_of_week"`
+	StartTime   time.Time `json:"start_time"` // The Go driver will handle the SQL TIME type.
+	EndTime     time.Time `json:"end_time"`
+	Location    *string   `json:"location,omitempty"`
 }
