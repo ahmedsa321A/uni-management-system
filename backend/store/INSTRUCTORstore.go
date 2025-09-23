@@ -104,11 +104,12 @@ func (s *INSTRUCTORstore) Delete(instructorID int64) error {
 	}
 	return nil
 }
-func (s *INSTRUCTORstore) Update(instructor *models.Instructor, newFirstName string, newLastName string, newDepartmentID *int) error {
+
+func (s *INSTRUCTORstore) Update(instructor *models.Instructor) error {
 	if instructor == nil || instructor.InstructorID <= 0 {
 		return errors.New("invalid instructor")
 	}
-	if newFirstName == "" {
+	if instructor.FirstName == "" {
 		return errors.New("first name is required")
 	}
 	//tx, err := s.DB.Begin()
@@ -118,7 +119,7 @@ func (s *INSTRUCTORstore) Update(instructor *models.Instructor, newFirstName str
           UPDATE INSTRUCTORS
           SET first_name = ?, last_name = ?, department_id = ?
           WHERE instructor_id = ?;`
-	res, err := s.DB.Exec(query, newFirstName, newLastName, newDepartmentID, instructor.InstructorID)
+	res, err := s.DB.Exec(query, instructor.FirstName, instructor.LastName, instructor.DepartmentID, instructor.InstructorID)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			return fmt.Errorf("cannot update instuctor; invalid newdepartmentID")
