@@ -120,3 +120,14 @@ type ClassSession struct {
 	EndTime     time.Time `json:"end_time"`
 	Location    *string   `json:"location,omitempty"`
 }
+
+type TimeTableEntry struct {
+	CourseCode     string    `json:"course_code"`
+	CourseTitle    string    `json:"course_title"`
+	SessionType    string    `json:"session_type"`
+	DayOfWeek      string    `json:"day_of_week"`
+	StartTime      time.Time `json:"start_time"`
+	EndTime        time.Time `json:"end_time"`
+	Location       *string   `json:"location,omitempty"`
+	InstructorName string    `json:"instructor_name"`
+}

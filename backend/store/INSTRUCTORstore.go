@@ -47,8 +47,8 @@ func (s *INSTRUCTORstore) GetAll() ([]*models.Instructor, error) {
 }
 func (s *INSTRUCTORstore) Create(instructor *models.Instructor) (int64, error) {
 	query := `
-		INSERT INTO INSTRUCTORS (user_id, department_id, first_name, last_name)
-		VALUES (?, ?, ?, ?, ?);`
+        INSERT INTO INSTRUCTORS (user_id, department_id, first_name, last_name)
+        VALUES (?, ?, ?, ?);`
 	result, err := s.DB.Exec(query, instructor.UserID, instructor.DepartmentID, instructor.FirstName, instructor.LastName)
 	if err != nil {
 		return 0, err
@@ -86,34 +86,33 @@ func (s *INSTRUCTORstore) GetByID(instructorID int64) (*models.Instructor, error
 	return &instructor, nil
 
 }
-func (s *INSTRUCTORstore) DeleteByID(instructorID int64) error {
+func (s *INSTRUCTORstore) Delete(instructorID int64) error {
 	if instructorID <= 0 {
 		return fmt.Errorf("no instructor found with ID %d", instructorID)
 	}
 	query := `DELETE FROM INSTRUCTORS WHERE instructor_id = ?;`
-	err := s.DB.QueryRow(query, instructorID).Scan(&sql.ErrNoRows)
-
+	result, err := s.DB.Exec(query, instructorID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("no instructor found with ID %d", instructorID)
-		}
-		return fmt.Errorf("error deleting instructor with ID %d: %s", instructorID, err)
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("no instructor found with ID %d to delete", instructorID)
 	}
 	return nil
 }
-func (s *INSTRUCTORstore) UpdateByID(instructor *models.Instructor, newFirstName string, newLastName string, newDepartmentID *int) error {
+func (s *INSTRUCTORstore) Update(instructor *models.Instructor, newFirstName string, newLastName string, newDepartmentID *int) error {
 	if instructor == nil || instructor.InstructorID <= 0 {
 		return errors.New("invalid instructor")
 	}
 	if newFirstName == "" {
 		return errors.New("first name is required")
 	}
-	tx, err := s.DB.Begin()
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-
-	defer tx.Rollback()
+	//tx, err := s.DB.Begin()
+	//defer tx.Rollback()
 	//write the query
 	query := `
           UPDATE INSTRUCTORS
@@ -139,10 +138,10 @@ func (s *INSTRUCTORstore) UpdateByID(instructor *models.Instructor, newFirstName
 	return nil
 
 }
-func (s *INSTRUCTORstore) GetTimetable(instructorID int64, semester string, year int) ([]*TimeTableEntry, error) {
+func (s *INSTRUCTORstore) GetTimetable(instructorID int64, semester string, year int) ([]*models.TimeTableEntry, error) {
 	query := ` 
-           SELECT 
-            i.first_name,
+        SELECT 
+            i.first_name || ' ' || i.last_name as instructor_name,
 			c.course_code, 
 			c.title, 
 			cs.session_type, 
@@ -171,9 +170,9 @@ func (s *INSTRUCTORstore) GetTimetable(instructorID int64, semester string, year
 		return nil, fmt.Errorf("error getting timetable: %w", err)
 	}
 	defer rows.Close()
-	var timetable []*TimeTableEntry
+	var timetable []*models.TimeTableEntry
 	for rows.Next() {
-		var entry TimeTableEntry
+		var entry models.TimeTableEntry
 		err := rows.Scan(
 			&entry.InstructorName,
 			&entry.CourseCode,

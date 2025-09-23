@@ -3,7 +3,6 @@ package store
 import (
 	"database/sql"
 	"fmt"
-	"time"
 	"university-management/backend/models"
 )
 
@@ -16,17 +15,6 @@ type GradeDetail struct {
 	Semester    string
 	Year        int
 	Grade       *string // Pointer to handle grades that are not yet assigned
-}
-
-type TimeTableEntry struct {
-	CourseCode     string
-	CourseTitle    string
-	SessionType    string // Added session type
-	DayOfWeek      string
-	StartTime      time.Time
-	EndTime        time.Time
-	Location       *string
-	InstructorName string
 }
 
 func (s *StudentStore) Create(student *models.Student) (int64, error) {
@@ -225,7 +213,7 @@ func (s *StudentStore) GetGrades(studentID int) ([]*GradeDetail, error) {
 	return grades, nil
 }
 
-func (s *StudentStore) GetTimeTable(studentID int, semester string, year int) ([]*TimeTableEntry, error) {
+func (s *StudentStore) GetTimeTable(studentID int, semester string, year int) ([]*models.TimeTableEntry, error) {
 	query := `
 		SELECT 
 			c.course_code, c.title, cs.session_type, cs.day_of_week, cs.start_time, cs.end_time, cs.location, 
@@ -247,9 +235,9 @@ func (s *StudentStore) GetTimeTable(studentID int, semester string, year int) ([
 	}
 	defer rows.Close()
 
-	var timetable []*TimeTableEntry
+	var timetable []*models.TimeTableEntry
 	for rows.Next() {
-		var entry TimeTableEntry
+		var entry models.TimeTableEntry
 		err := rows.Scan(
 			&entry.CourseCode,
 			&entry.CourseTitle,
