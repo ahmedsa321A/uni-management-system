@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"time"
 	"university-management/backend/models"
 )
 
@@ -212,23 +213,22 @@ func (s *StudentStore) GetGrades(studentID int) ([]*GradeDetail, error) {
 	}
 	return grades, nil
 }
-
 func (s *StudentStore) GetTimeTable(studentID int, semester string, year int) ([]*models.TimeTableEntry, error) {
 	query := `
-		SELECT 
-			c.course_code, c.title, cs.session_type, cs.day_of_week, cs.start_time, cs.end_time, cs.location, 
-			i.first_name || ' ' || i.last_name as instructor_name
-		FROM 
-			STUDENT_SESSION_CHOICES ssc
-		JOIN CLASS_SESSIONS cs ON ssc.session_id = cs.session_id
-		JOIN COURSE_OFFERINGS co ON ssc.offering_id = co.offering_id
-		JOIN COURSES c ON co.course_id = c.course_id
-		JOIN INSTRUCTORS i ON co.instructor_id = i.instructor_id
-		WHERE 
-			ssc.student_id = ?
-			AND co.semester = ? AND co.year = ?
-		ORDER BY
-			start_time;`
+        SELECT 
+            c.course_code, c.title, cs.session_type, cs.day_of_week, cs.start_time, cs.end_time, cs.location, 
+            i.first_name || ' ' || i.last_name as instructor_name
+        FROM 
+            STUDENT_SESSION_CHOICES ssc
+        JOIN CLASS_SESSIONS cs ON ssc.session_id = cs.session_id
+        JOIN COURSE_OFFERINGS co ON cs.offering_id = co.offering_id
+        JOIN COURSES c ON co.course_id = c.course_id
+        JOIN INSTRUCTORS i ON co.instructor_id = i.instructor_id
+        WHERE 
+            ssc.student_id = ?
+            AND co.semester = ? AND co.year = ?
+        ORDER BY
+            cs.start_time;`
 	rows, err := s.DB.Query(query, studentID, semester, year)
 	if err != nil {
 		return nil, err
@@ -238,19 +238,36 @@ func (s *StudentStore) GetTimeTable(studentID int, semester string, year int) ([
 	var timetable []*models.TimeTableEntry
 	for rows.Next() {
 		var entry models.TimeTableEntry
+		// --- THE FIX ---
+		// 1. Create temporary string variables to hold the time from the database.
+		var startTimeStr, endTimeStr string
+
+		// 2. Scan the time columns into the new string variables.
 		err := rows.Scan(
 			&entry.CourseCode,
 			&entry.CourseTitle,
 			&entry.SessionType,
 			&entry.DayOfWeek,
-			&entry.StartTime,
-			&entry.EndTime,
+			&startTimeStr, // Read into string
+			&endTimeStr,   // Read into string
 			&entry.Location,
 			&entry.InstructorName,
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		// 3. Parse the time strings into time.Time objects.
+		// The layout "15:04:05" tells Go how to interpret the HH:MM:SS format.
+		entry.StartTime, err = time.Parse("15:04:05", startTimeStr)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing start time '%s': %w", startTimeStr, err)
+		}
+		entry.EndTime, err = time.Parse("15:04:05", endTimeStr)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing end time '%s': %w", endTimeStr, err)
+		}
+
 		timetable = append(timetable, &entry)
 	}
 

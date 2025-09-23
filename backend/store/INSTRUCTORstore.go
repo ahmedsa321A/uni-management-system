@@ -21,7 +21,7 @@ func (s *INSTRUCTORstore) GetAll() ([]*models.Instructor, error) {
 	rows, err := s.DB.Query(query)
 
 	if err != nil {
-		return nil, errors.New("Error getting instructors")
+		return nil, errors.New("error getting instructors")
 	}
 	defer rows.Close()
 	var instructors []*models.Instructor
@@ -35,7 +35,7 @@ func (s *INSTRUCTORstore) GetAll() ([]*models.Instructor, error) {
 			&instructor.DepartmentID,
 		)
 		if err != nil {
-			return nil, errors.New("Error scanning instructor")
+			return nil, errors.New("error scanning instructor")
 		}
 		instructors = append(instructors, &instructor)
 	}
@@ -134,7 +134,10 @@ func (s *INSTRUCTORstore) Update(instructor *models.Instructor) error {
 		return fmt.Errorf("no updated instuctor with ID %d", instructor.InstructorID)
 	}
 	// update instance of struct in memory
-	instructor, err = s.GetByID(instructor.InstructorID)
+	// instructor, err = s.GetByID(instructor.InstructorID)
+	// if err != nil {
+	// 	return fmt.Errorf("error retrieving updated instuctor with ID %d: %s", instructor.InstructorID, err)
+	// }
 
 	return nil
 

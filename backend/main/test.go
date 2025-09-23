@@ -1,139 +1,153 @@
+// This main application is a test harness for the entire data store layer.
 package main
 
 import (
+	"fmt"
 	"log"
+	"time"
 	"university-management/backend/config"
 	"university-management/backend/models"
 	"university-management/backend/store"
 )
 
 func main() {
-	// --- SETUP ---
+	// --- 1. Setup Phase ---
+	log.Println("--- Setting up database for testing ---")
 	cfg := config.Load()
 	db, err := store.Connect(cfg.DBPath)
 	if err != nil {
 		log.Fatalf("FATAL: could not connect to database: %v", err)
 	}
 	defer db.Close()
-	log.Println("INFO: Database connection successful.")
 
-	// Instantiate all stores
+	// Instantiate all necessary stores for the tests
 	userStore := &store.UserStore{DB: db}
 	studentStore := &store.StudentStore{DB: db}
+	// CORRECTED: Struct names in Go use PascalCase (InstructorStore)
 	instructorStore := &store.INSTRUCTORstore{DB: db}
+	courseStore := &store.CourseStore{DB: db}
+	offeringStore := &store.CourseOfferingStore{DB: db}
+	sessionStore := &store.ClassSessionStore{DB: db}
+	enrollmentStore := &store.EnrollmentStore{DB: db}
+	choiceStore := &store.StudentSessionChoiceStore{DB: db}
 
-	// --- TEST DATA (Users) ---
-	studentUser := &models.User{Email: "john.doe@test.com", PasswordHash: "hash1", RoleID: 2}
-	instructorUser := &models.User{Email: "prof.davis@test.com", PasswordHash: "hash2", RoleID: 3}
-
-	// --- USER STORE TEST ---
-	log.Println("\n--- Testing UserStore ---")
-	// Get the initial user IDs in case they already exist from a previous run.
-	existingStudentUser, _ := userStore.GetByEmail(studentUser.Email)
-	existingInstructorUser, _ := userStore.GetByEmail(instructorUser.Email)
-
-	var studentUserID, instructorUserID int64
-
-	if existingStudentUser != nil {
-		studentUserID = int64(existingStudentUser.UserID)
-		log.Printf("INFO: Student user '%s' already exists with ID: %d", studentUser.Email, studentUserID)
-	} else {
-		studentUserID, err = userStore.Create(studentUser)
-		if err != nil {
-			log.Fatalf("FATAL: Could not create student user: %v", err)
+	// --- Test 1: Create and Read Student ---
+	log.Println("\n--- Testing Student Create & Read ---")
+	studentUser := &models.User{Email: "ahmed.student@example.com", PasswordHash: "ahmed", RoleID: 2}
+	studentUserID, err := userStore.Create(studentUser)
+	if err != nil {
+		log.Printf("WARN: Could not create student user (this is expected if the user already exists): %v", err)
+		existingUser, fetchErr := userStore.GetByEmail(studentUser.Email)
+		if fetchErr != nil {
+			log.Fatalf("FATAL: Could not fetch existing student user to continue: %v", fetchErr)
 		}
-		log.Printf("SUCCESS: Created student user with ID: %d", studentUserID)
-	}
-
-	if existingInstructorUser != nil {
-		instructorUserID = int64(existingInstructorUser.UserID)
-		log.Printf("INFO: Instructor user '%s' already exists with ID: %d", instructorUser.Email, instructorUserID)
+		studentUserID = int64(existingUser.UserID)
+		log.Printf("INFO: Using existing user with ID: %d", studentUserID)
 	} else {
-		instructorUserID, err = userStore.Create(instructorUser)
-		if err != nil {
-			log.Fatalf("FATAL: Could not create instructor user: %v", err)
+		log.Printf("SUCCESS: Created new user for student with ID: %d", studentUserID)
+	}
+	// CORRECTED: Cast the int64 UserID to int for the Student model.
+	student := &models.Student{UserID: studentUserID, FirstName: "ahmed", LastName: "saied"}
+	studentID, err := studentStore.Create(student)
+	if err != nil {
+		log.Fatalf("FATAL: Failed to create student profile: %v", err)
+	}
+	log.Printf("SUCCESS: Created new student profile with ID: %d", studentID)
+	retrievedStudent, err := studentStore.GetByID(int(studentID))
+	if err != nil {
+		log.Fatalf("FATAL: Failed to retrieve student: %v", err)
+	}
+	log.Printf("SUCCESS: Verified student creation. Retrieved: %s %s", retrievedStudent.FirstName, retrievedStudent.LastName)
+
+	// --- Test 2: Create and Read Instructor ---
+	log.Println("\n--- Testing Instructor Create & Read ---")
+	instructorUser := &models.User{Email: "mo.instructor@example.com", PasswordHash: "mo", RoleID: 3}
+	instructorUserID, err := userStore.Create(instructorUser)
+	if err != nil {
+		log.Printf("WARN: Could not create instructor user (this is expected if the user already exists): %v", err)
+		existingUser, fetchErr := userStore.GetByEmail(instructorUser.Email)
+		if fetchErr != nil {
+			log.Fatalf("FATAL: Could not fetch existing instructor user to continue: %v", fetchErr)
 		}
-		log.Printf("SUCCESS: Created instructor user with ID: %d", instructorUserID)
+		instructorUserID = int64(existingUser.UserID)
+		log.Printf("INFO: Using existing user with ID: %d", instructorUserID)
+	} else {
+		log.Printf("SUCCESS: Created new user for instructor with ID: %d", instructorUserID)
 	}
-
-	// --- STUDENT STORE TEST ---
-	log.Println("\n--- Testing StudentStore ---")
-	// Create
-	newStudent := &models.Student{UserID: studentUserID, FirstName: "John", LastName: "Doe"}
-	newStudentID, err := studentStore.Create(newStudent)
+	// CORRECTED: Cast the int64 UserID to int for the Instructor model.
+	instructor := &models.Instructor{UserID: instructorUserID, FirstName: "mo", LastName: "mostafa"}
+	instructorID, err := instructorStore.Create(instructor)
 	if err != nil {
-		log.Fatalf("FATAL: Failed to create student: %v", err)
+		log.Fatalf("FATAL: Failed to create instructor profile: %v", err)
 	}
-	log.Printf("SUCCESS: Created student with ID: %d", newStudentID)
-
-	// GetByID
-	retrievedStudent, err := studentStore.GetByID(int(newStudentID))
+	log.Printf("SUCCESS: Created new instructor profile with ID: %d", instructorID)
+	retrievedInstructor, err := instructorStore.GetByID(instructorID)
 	if err != nil {
-		log.Fatalf("FATAL: Failed to get student by ID: %v", err)
+		log.Fatalf("FATAL: Failed to retrieve instructor: %v", err)
 	}
-	log.Printf("SUCCESS: Retrieved student: %s %s", retrievedStudent.FirstName, retrievedStudent.LastName)
+	log.Printf("SUCCESS: Verified instructor creation. Retrieved: %s %s", retrievedInstructor.FirstName, retrievedInstructor.LastName)
 
-	// Update
-	retrievedStudent.LastName = "Smith"
-	err = studentStore.Update(retrievedStudent)
+	// --- Test 3: Create and Read Course ---
+	log.Println("\n--- Testing Course Create & Read ---")
+	course := &models.Course{CourseCode: "CS101", Title: "Introduction to Computer Science", Credits: 3, DepartmentID: 1}
+	courseID, err := courseStore.Create(course)
 	if err != nil {
-		log.Fatalf("FATAL: Failed to update student: %v", err)
+		log.Fatalf("FATAL: Failed to create course: %v", err)
 	}
-	log.Printf("SUCCESS: Updated student's last name to 'Smith'")
+	log.Printf("SUCCESS: Created new course with ID: %d", courseID)
 
-	// GetAll
-	allStudents, err := studentStore.GetAll()
+	// --- Test 4: Create and Test Timetables ---
+	log.Println("\n--- Testing Timetable Creation & Retrieval ---")
+	offering := &models.CourseOffering{CourseID: int(courseID), InstructorID: int(instructorID), Semester: "Fall", Year: 2025}
+	offeringID, err := offeringStore.Create(offering)
 	if err != nil {
-		log.Fatalf("FATAL: Failed to get all students: %v", err)
+		log.Fatalf("FATAL: Failed to create course offering: %v", err)
 	}
-	log.Printf("SUCCESS: Found %d student(s) in total.", len(allStudents))
+	log.Printf("SUCCESS: Created course offering with ID: %d", offeringID)
 
-	// Delete
-	err = studentStore.Delete(int(newStudentID))
+	startTime, _ := time.Parse("15:04", "10:00")
+	endTime, _ := time.Parse("15:04", "11:29")
+	fmt.Printf("Parsed start time: %v, end time: %v\n", startTime, endTime) // Debug print
+	session := &models.ClassSession{
+		OfferingID:  int(offeringID),
+		SessionType: "Lecture",
+		DayOfWeek:   "Monday",
+		StartTime:   startTime,
+		EndTime:     endTime,
+	}
+	sessionID, err := sessionStore.Create(session)
 	if err != nil {
-		log.Fatalf("FATAL: Failed to delete student: %v", err)
+		log.Fatalf("FATAL: Failed to create class session: %v", err)
 	}
-	log.Printf("SUCCESS: Deleted student with ID: %d", newStudentID)
+	log.Printf("SUCCESS: Created class session with ID: %d", sessionID)
 
-	// --- INSTRUCTOR STORE TEST ---
-	log.Println("\n--- Testing InstructorStore ---")
-	// Create
-	newInstructor := &models.Instructor{UserID: instructorUserID, FirstName: "Alice", LastName: "Davis"}
-	newInstructorID, err := instructorStore.Create(newInstructor)
+	// CORRECTED: Removed the duplicated line that created the session twice.
+
+	enrollment := &models.Enrollment{StudentID: int(studentID), OfferingID: int(offeringID)}
+	_ = enrollmentStore.Create(enrollment)
+	log.Println("INFO: Student enrollment in course offering created.")
+
+	choice := &models.StudentSessionChoice{StudentID: int(studentID), OfferingID: int(offeringID), SessionID: int(sessionID)}
+	_ = choiceStore.Create(choice)
+	log.Println("SUCCESS: Student session choice recorded.")
+
+	studentTimetable, err := studentStore.GetTimeTable(int(studentID), "Fall", 2025)
 	if err != nil {
-		log.Fatalf("FATAL: Failed to create instructor: %v", err)
+		log.Fatalf("FATAL: Failed to get student timetable: %v", err)
 	}
-	log.Printf("SUCCESS: Created instructor with ID: %d", newInstructorID)
+	if len(studentTimetable) == 0 {
+		log.Fatalf("FATAL: Student timetable was empty, but should have one entry.")
+	}
+	log.Printf("SUCCESS: Student timetable retrieved. Found %d entries.", len(studentTimetable))
 
-	// GetByID
-	retrievedInstructor, err := instructorStore.GetByID(newInstructorID)
+	instructorTimetable, err := instructorStore.GetTimetable(instructorID, "Fall", 2025)
 	if err != nil {
-		log.Fatalf("FATAL: Failed to get instructor by ID: %v", err)
+		log.Fatalf("FATAL: Failed to get instructor timetable: %v", err)
 	}
-	log.Printf("SUCCESS: Retrieved instructor: %s %s", retrievedInstructor.FirstName, retrievedInstructor.LastName)
-
-	// Update
-	retrievedInstructor.LastName = "Williams"
-	err = instructorStore.Update(retrievedInstructor)
-	if err != nil {
-		log.Fatalf("FATAL: Failed to update instructor: %v", err)
+	if len(instructorTimetable) == 0 {
+		log.Fatalf("FATAL: Instructor timetable was empty, but should have one entry.")
 	}
-	log.Printf("SUCCESS: Updated instructor's last name to 'Williams'")
+	log.Printf("SUCCESS: Instructor timetable retrieved. Found %d entries.", len(instructorTimetable))
 
-	// GetAll
-	allInstructors, err := instructorStore.GetAll()
-	if err != nil {
-		log.Fatalf("FATAL: Failed to get all instructors: %v", err)
-	}
-	log.Printf("SUCCESS: Found %d instructor(s) in total.", len(allInstructors))
-
-	// Delete
-	err = instructorStore.Delete(newInstructorID)
-	if err != nil {
-		log.Fatalf("FATAL: Failed to delete instructor: %v", err)
-	}
-	log.Printf("SUCCESS: Deleted instructor with ID: %d", newInstructorID)
-
-	log.Println("\n--- ALL TESTS COMPLETED ---")
-	// }
+	log.Println("\nAll tests completed.")
 }

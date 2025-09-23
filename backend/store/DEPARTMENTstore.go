@@ -23,7 +23,7 @@ func (d *DeprtmentStore) GetAll() ([]*models.Department, error) {
 	rows, err := d.db.Query(query)
 
 	if err != nil {
-		return nil, errors.New("Error getting departments")
+		return nil, errors.New("error getting departments")
 	}
 	defer rows.Close()
 	var departments []*models.Department
@@ -35,7 +35,7 @@ func (d *DeprtmentStore) GetAll() ([]*models.Department, error) {
 			&department.FacultyID,
 		)
 		if err != nil {
-			return nil, errors.New("Error scanning department")
+			return nil, errors.New("error scanning department")
 		}
 		departments = append(departments, &department)
 	}
